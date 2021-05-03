@@ -27,7 +27,7 @@ This mod will likely trigger any AntiTampering methods that it hasnt detected, p
 # Screenshots
 ![basicView](https://i.imgur.com/3AVDZy5.png)
 
-(using "-showAll" (v1.0.1 <)
+(using "-showAll" (v1.0.1 <))
 
 ![showAll](https://i.imgur.com/2GCCkaS.png)
 
