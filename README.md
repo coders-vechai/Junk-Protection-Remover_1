@@ -1,6 +1,8 @@
 # Junk-Remover
 .NET attributes cleaner/Junk remover for obfuscation.
 
+(you currently need to use settings.txt from the og application because i forgot to provide it because im a dumbass)
+
 # Usage
 Drag & Drop on the application to clean it
 
