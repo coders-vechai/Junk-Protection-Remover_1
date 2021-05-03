@@ -44,29 +44,16 @@ namespace Anti_De4dot_remover
                 "ZYXDNGuarder"
             };
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
+        private static bool printAll = false, commentProtections = false;
         private static void Main(string[] args)
         {
             Console.Title = "Junk Remover by OFF_LINE";
             Console.ForegroundColor = ConsoleColor.Red;
-            string text = args[0];
+            string text = "";
             bool preserveEverything = true;
             string[] shit = File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + "\\settings.txt");
             if (!shit[0].Contains("true"))
                 preserveEverything = false;            
-            try
-            {
-                Program.module = ModuleDefMD.Load(text);
-                Program.asm = Assembly.LoadFrom(text);
-                Program.Asmpath = text;
-            }
-            catch (Exception)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(" Not a .NET Assembly!");
-                Console.ResetColor();
-                Console.WriteLine(" Press any key to exit...");
-                System.Environment.Exit(0);
-            }
             Console.ForegroundColor = ConsoleColor.DarkMagenta;
             string sb = @"       __            __      ____                                     
       / /_  ______  / /__   / __ \___  ____ ___  ____ _   _____  _____
@@ -83,6 +70,49 @@ namespace Anti_De4dot_remover
             Console.WriteLine("  |- (Very basic) AntiTampering, AntiDebugger & AntiDump Protection Remover");
             Console.WriteLine("  |- CUI Improvements & Fixes");
             Console.WriteLine();
+            if (args.Count() == 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(" No arguments found!");
+                goto end;
+            }
+            for (int x = 0; x < args.Count(); x++)
+            {
+                if (File.Exists(args[x]))
+                {
+                    text = args[x];
+                    continue;
+                }
+                switch (args[x])
+                {
+                    case "-commentProtectionMethods":
+                        printAll = true;
+                        break;
+                    case "-showAll":
+                        commentProtections = true;
+                        break;
+                }
+            }
+            if (text == "")
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(" No file set!");
+                goto end;
+            }
+            try
+            {
+                Program.module = ModuleDefMD.Load(text);
+                Program.asm = Assembly.LoadFrom(text);
+                Program.Asmpath = text;
+            }
+            catch (Exception)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(" Not a .NET Assembly!");
+                Console.ResetColor();
+                Console.WriteLine(" Press any key to exit...");
+                System.Environment.Exit(0);
+            }
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine(" Filtering useless Nop instructions..");
             try
@@ -122,6 +152,10 @@ namespace Anti_De4dot_remover
             }
             nativeModuleWriterOptions.Logger = DummyLogger.NoThrowInstance;
             bool isILOnly = Program.module.IsILOnly;
+            if (!printAll)
+            {
+                Console.WriteLine();
+            }
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine(" Now saving " + Path.GetFileNameWithoutExtension(args[0]) + "-IL" + Path.GetExtension(args[0]) + " (IL)...");
             try
@@ -225,6 +259,10 @@ namespace Anti_De4dot_remover
 
         public static void printDisabled(string data, string moreInfo = "")
         {
+            if (!printAll)
+            {
+                return;
+            }
             Console.ForegroundColor = ConsoleColor.Magenta;
             Console.Write(" [Disabled]: ");
             Console.ForegroundColor = ConsoleColor.White;
@@ -240,6 +278,10 @@ namespace Anti_De4dot_remover
 
         public static void printRemoved(string data, string moreInfo = "")
         {
+            if (!printAll)
+            {
+                return;
+            }
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Write(" [Removed]: ");
             Console.ForegroundColor = ConsoleColor.White;
@@ -255,6 +297,10 @@ namespace Anti_De4dot_remover
 
         public static void printRenamed(string data, string moreInfo = "")
         {
+            if (!printAll)
+            {
+                return;
+            }
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write(" [Renamed]: ");
             Console.ForegroundColor = ConsoleColor.White;
@@ -387,19 +433,25 @@ namespace Anti_De4dot_remover
                                     instString.Add("IL_" + int.Parse(inst_.Offset.ToString("X"), System.Globalization.NumberStyles.HexNumber) + "       " + inst_.OpCode.ToString() + ((inst_.Operand == null) ? null : "   " + inst_.Operand.ToString()));
                                 }
                                 method.Body.Instructions.Clear();
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "[Junk Remover]: Function Cleared! (Reason: AntiTampering Protection)"));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "Original Instructions (" + instString.Count + "):"));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "-----------------------------------------------------------------------------------------"));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
-                                for (int i = 0; i < instString.Count; i++)
+                                if (commentProtections)
                                 {
-                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, instString[i]));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "[Junk Remover]: Function Cleared! (Reason: AntiTampering Protection)"));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "Original Instructions (" + instString.Count + "):"));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "-----------------------------------------------------------------------------------------"));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
+                                    for (int i = 0; i < instString.Count; i++)
+                                    {
+                                        method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, instString[i]));
+                                    }
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ret));
                                 }
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ret));
                                 printDisabled("AntiTampering Protection", t_.Name + "." + method.Name);
-                                Console.WriteLine();
+                                if (printAll)
+                                {
+                                    Console.WriteLine();
+                                }
                                 break;
                             }
                         }
@@ -423,19 +475,25 @@ namespace Anti_De4dot_remover
                                     instString.Add("IL_" + int.Parse(inst_.Offset.ToString("X"), System.Globalization.NumberStyles.HexNumber) + "       " + inst_.OpCode.ToString() + ((inst_.Operand == null) ? null : "   " + inst_.Operand.ToString()));
                                 }
                                 method.Body.Instructions.Clear();
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "[Junk Remover]: Function Cleared! (Reason: AntiDump Protection)"));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "Original Instructions (" + instString.Count + "):"));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "-----------------------------------------------------------------------------------------"));
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
-                                for (int i = 0; i < instString.Count; i++)
+                                if (commentProtections)
                                 {
-                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, instString[i]));
-                                }
-                                method.Body.Instructions.Add(new Instruction(OpCodes.Ret));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "[Junk Remover]: Function Cleared! (Reason: AntiDump Protection)"));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "Original Instructions (" + instString.Count + "):"));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, "-----------------------------------------------------------------------------------------"));
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, ""));
+                                    for (int i = 0; i < instString.Count; i++)
+                                    {
+                                        method.Body.Instructions.Add(new Instruction(OpCodes.Ldstr, instString[i]));
+                                    }
+                                    method.Body.Instructions.Add(new Instruction(OpCodes.Ret));
+                                }                                
                                 printDisabled("AntiDumping Protection", t_.Name + "." + method.Name);
-                                Console.WriteLine();
+                                if (printAll)
+                                {
+                                    Console.WriteLine();
+                                }
                                 break;
                             }
                         }
