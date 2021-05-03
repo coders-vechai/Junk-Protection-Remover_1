@@ -35,7 +35,8 @@ Debugging calls will be changed to strings to prevent the application to check f
 
 ![basicView](https://i.imgur.com/3AVDZy5.png)
 
-(using "-showAll")
+(using "-showAll" (v1.0.1 <)
+
 ![showAll](https://i.imgur.com/2GCCkaS.png)
 
 # Credits
