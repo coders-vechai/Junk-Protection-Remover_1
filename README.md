@@ -31,7 +31,8 @@ This mod will likely trigger any AntiTampering methods that it hasnt detected, p
 
 ![showAll](https://i.imgur.com/2GCCkaS.png)
 
-Protections will be present as such if found by the mod
+# Result
+Protections will be presented as such if found by the mod
 
 (Note: in versions 1.0.1 <, you will have to add "-commentProtectionMethods" in the starting arguments to have the following, this option will/can increase the file size, sometimes by a lot)
 ![disabledProtectionsOutput](https://i.imgur.com/ukcQMfq.png)
