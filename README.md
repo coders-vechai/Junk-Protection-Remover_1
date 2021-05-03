@@ -25,13 +25,13 @@ This mod will likely trigger any AntiTampering methods that it hasnt detected, p
 </pre>
 
 # Screenshots
-Protections will be present as such if found by the mod
-
 ![basicView](https://i.imgur.com/3AVDZy5.png)
 
 (using "-showAll" (v1.0.1 <)
 
 ![showAll](https://i.imgur.com/2GCCkaS.png)
+
+Protections will be present as such if found by the mod
 
 (Warning: This increases the file size of the cleaned application, if you want to reduce the file size you will have to clear the method, if you want this in version v1.0.1 and newer you will have to add "-commentProtectionMethods" as an argument while starting the app)
 ![disabledProtectionsOutput](https://i.imgur.com/ukcQMfq.png)
