@@ -18,6 +18,7 @@ This mod will likely trigger any AntiTampering methods that it hasnt detected, p
 
 # Screenshots
 Protections will be present as such if found by the mod
+
 (Warning: This increases the file size of the cleaned application, if you want to reduce the file size you will have to clear the method)
 ![disabledProtectionsOutput](https://i.imgur.com/ukcQMfq.png)
 
