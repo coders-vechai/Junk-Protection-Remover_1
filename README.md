@@ -33,7 +33,7 @@ This mod will likely trigger any AntiTampering methods that it hasnt detected, p
 
 Protections will be present as such if found by the mod
 
-(Warning: This increases the file size of the cleaned application, if you want to reduce the file size you will have to clear the method, if you want this in version v1.0.1 and newer you will have to add "-commentProtectionMethods" as an argument while starting the app)
+(Note: in versions 1.0.1 <, you will have to add "-commentProtectionMethods" in the starting arguments to have the following, this option will however increase the file size)
 ![disabledProtectionsOutput](https://i.imgur.com/ukcQMfq.png)
 
 Debugging calls will be changed to strings to prevent the application to check for debuggers
