@@ -9,6 +9,8 @@ Drag & Drop on the application to clean it
 - Very Basic Protection "Remover" (more like disabler but aight), Supports AntiDebugging, AntiTampering & AntiDumping
   |- Tested on a DotNetPatcher Obfuscated Application
 - CUI Improvements & Fixes
+
+TLDR: it just comments instructions that are protections so they don't load
 </pre>
 
 # Mod Notes:
