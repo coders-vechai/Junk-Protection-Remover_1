@@ -33,7 +33,7 @@ This mod will likely trigger any AntiTampering methods that it hasnt detected, p
 
 Protections will be present as such if found by the mod
 
-(Note: in versions 1.0.1 <, you will have to add "-commentProtectionMethods" in the starting arguments to have the following, this option will however increase the file size)
+(Note: in versions 1.0.1 <, you will have to add "-commentProtectionMethods" in the starting arguments to have the following, this option will/can increase the file size, sometimes by a lot)
 ![disabledProtectionsOutput](https://i.imgur.com/ukcQMfq.png)
 
 Debugging calls will be changed to strings to prevent the application to check for debuggers
