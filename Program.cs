@@ -45,9 +45,9 @@ namespace Anti_De4dot_remover
                 "ZYXDNGuarder"
             };
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
-        private static bool printAll = false, commentProtections = false, disableProtections = true, preserveEverything = true, noBase64Decode = true, editArgsFirst = true, removeNops = true, removeAntiDe4dots = true, renameDllImports = true;
-        private static int controlIndex = 0;
-        private static bool[] boolVars = new bool[8];
+        private static bool printAll = false, commentProtections = false, fixBasicMath = true, disableProtections = true, preserveEverything = true, noBase64Decode = true, editArgsFirst = true, removeNops = true, removeAntiDe4dots = true, renameDllImports = true;
+        private static int controlIndex = 0, mathFixed = 0;
+        private static bool[] boolVars = new bool[9];
         private static void editArgs()
         {
             SplashScreen();
@@ -61,6 +61,7 @@ namespace Anti_De4dot_remover
                 boolVars[5] = commentProtections;
                 boolVars[6] = printAll;
                 boolVars[7] = !preserveEverything;
+                boolVars[8] = fixBasicMath;
                 editArgsFirst = false;
             }            
             Console.ForegroundColor = ConsoleColor.White;
@@ -79,20 +80,22 @@ namespace Anti_De4dot_remover
             PrintFromBool(boolVars[2], controlIndex, 2);
             Console.Write("  |- Disable Protection Methods: ");
             PrintFromBool(boolVars[3], controlIndex, 3);
+            Console.Write("  |- Fix Simple Calculations:    ");
+            PrintFromBool(boolVars[8], controlIndex, 4);
             Console.Write("  |- Decode Base64 Strings:      ");
-            PrintFromBool(boolVars[4], controlIndex, 4, "(takes a while, not stable)", ConsoleColor.DarkYellow);
+            PrintFromBool(boolVars[4], controlIndex, 5, "(takes a while, not stable)", ConsoleColor.DarkYellow);
             Console.ResetColor();
             Console.WriteLine("  ---------------------------------------|---MISC OPTIONS-------Mod--------");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("  |- Comment Protection Methods: ");
-            PrintFromBool(boolVars[5], controlIndex, 5, "(increases file size)", ConsoleColor.DarkYellow);
+            PrintFromBool(boolVars[5], controlIndex, 6, "(increases file size)", ConsoleColor.DarkYellow);
             Console.Write("  |- Show All Actions:           ");
-            PrintFromBool(boolVars[6], controlIndex, 6, "(console will be flooded)", ConsoleColor.Yellow);
+            PrintFromBool(boolVars[6], controlIndex, 7, "(console will be flooded)", ConsoleColor.Yellow);
             Console.ResetColor();
             Console.WriteLine("  ---------------------------------------|---SAVING OPTIONS-----Original---");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("  |- Don't Preserve Metadata:    ");
-            PrintFromBool(boolVars[7], controlIndex, 7, "(not recommended to use)", ConsoleColor.DarkRed);
+            PrintFromBool(boolVars[7], controlIndex, 8, "(not recommended to use)", ConsoleColor.DarkRed);
             Console.WriteLine();
             Console.Write("     Application Type: ");
             if (module.IsILOnly) { Console.ForegroundColor = ConsoleColor.DarkCyan; Console.WriteLine("IL-Only"); } else { Console.ForegroundColor = ConsoleColor.DarkYellow; Console.WriteLine("Native"); }
@@ -126,6 +129,7 @@ namespace Anti_De4dot_remover
                     commentProtections = boolVars[5];
                     printAll = boolVars[6];
                     preserveEverything = !boolVars[7];
+                    fixBasicMath = boolVars[8];
                     return;
             }
             editArgs();
@@ -242,12 +246,25 @@ namespace Anti_De4dot_remover
                 Console.WriteLine(" " + countofths + " FakeAttributes/AntiDe4dot cases removed!");
                 Console.WriteLine();
             }
-            if (disableProtections)
+            if (disableProtections || fixBasicMath)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine(" Checking for possible protections...");
+                if (fixBasicMath)
+                {
+                    Console.WriteLine(" Checking for possible protections & fixing math calculations...");
+                }
+                else
+                {
+                    Console.WriteLine(" Checking for possible protections...");
+                }
                 Console.WriteLine();
                 tryClearProtections();
+                if (fixBasicMath)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.WriteLine(" " + mathFixed + " Math calculations simplified!");
+                    Console.WriteLine();
+                }
             }
             if (!noBase64Decode)
             {
@@ -586,6 +603,60 @@ namespace Anti_De4dot_remover
                     for (int x = 0; x < method.Body.Instructions.Count; x++)
                     {
                         Instruction inst = method.Body.Instructions[x];
+                        // Simple Math Solver - Code taken from my mod of PointMutationCleaner (https://github.com/miso-xyz/MutationCleaner)
+                        if (fixBasicMath)
+                        {
+                            if (inst.OpCode.Equals(OpCodes.Xor) || inst.OpCode.Equals(OpCodes.Mul) || inst.OpCode.Equals(OpCodes.Add) || inst.OpCode.Equals(OpCodes.Sub))
+                            {
+                                if (method.Body.Instructions[x - 1].OpCode.Equals(OpCodes.Ldc_I4) && method.Body.Instructions[x - 2].OpCode.Equals(OpCodes.Ldc_I4))
+                                {
+                                    int endCalc = -1;
+                                    int typeCalc = -1;
+                                    switch (inst.OpCode.ToString())
+                                    {
+                                        case "xor":
+                                            typeCalc = 0;
+                                            endCalc = int.Parse(method.Body.Instructions[x - 2].Operand.ToString()) ^ int.Parse(method.Body.Instructions[x - 1].Operand.ToString());
+                                            break;
+                                        case "mul":
+                                            typeCalc = 1;
+                                            endCalc = int.Parse(method.Body.Instructions[x - 2].Operand.ToString()) * int.Parse(method.Body.Instructions[x - 1].Operand.ToString());
+                                            break;
+                                        case "add":
+                                            typeCalc = 2;
+                                            endCalc = int.Parse(method.Body.Instructions[x - 2].Operand.ToString()) + int.Parse(method.Body.Instructions[x - 1].Operand.ToString());
+                                            break;
+                                        case "sub":
+                                            typeCalc = 3;
+                                            endCalc = int.Parse(method.Body.Instructions[x - 2].Operand.ToString()) - int.Parse(method.Body.Instructions[x - 1].Operand.ToString());
+                                            break;
+                                    }
+                                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                                    switch (typeCalc)
+                                    {
+                                        case 0:
+                                            Console.WriteLine(" Calculation fixed '" + method.Body.Instructions[x - 2].Operand.ToString() + " ^ " + method.Body.Instructions[x - 1].Operand.ToString() + "' -> '" + endCalc + "'!");
+                                            break;
+                                        case 1:
+                                            Console.WriteLine(" Calculation fixed '" + method.Body.Instructions[x - 2].Operand.ToString() + " * " + method.Body.Instructions[x - 1].Operand.ToString() + "' -> '" + endCalc + "'!");
+                                            break;
+                                        case 2:
+                                            Console.WriteLine(" Calculation fixed '" + method.Body.Instructions[x - 2].Operand.ToString() + " + " + method.Body.Instructions[x - 1].Operand.ToString() + "' -> '" + endCalc + "'!");
+                                            break;
+                                        case 3:
+                                            Console.WriteLine(" Calculation fixed '" + method.Body.Instructions[x - 2].Operand.ToString() + " - " + method.Body.Instructions[x - 1].Operand.ToString() + "' -> '" + endCalc + "'!");
+                                            break;
+                                    }
+                                    Instruction calculated = new Instruction(OpCodes.Ldc_I4, endCalc);
+                                    method.Body.Instructions.RemoveAt(x - 2);
+                                    method.Body.Instructions.RemoveAt(x - 2);
+                                    method.Body.Instructions.RemoveAt(x - 2);
+                                    method.Body.Instructions.Insert(x - 2, OpCodes.Ldc_I4.ToInstruction(endCalc));
+                                    mathFixed++;
+                                }
+                            }
+                        }
+                        // end of math solver
                         if (inst.OpCode.Equals(OpCodes.Newobj) && method.Body.Instructions[x+1].OpCode.Equals(OpCodes.Throw))
                         {
                             if (inst.Operand.ToString().Contains("BadImageFormatException"))
