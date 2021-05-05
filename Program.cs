@@ -6,6 +6,7 @@ using System.Reflection;
 using dnlib.DotNet;
 using dnlib.DotNet.Emit;
 using dnlib.DotNet.Writer;
+using System.Text.RegularExpressions;
 
 namespace Anti_De4dot_remover
 {
@@ -44,16 +45,123 @@ namespace Anti_De4dot_remover
                 "ZYXDNGuarder"
             };
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
-        private static bool printAll = false, commentProtections = false;
-        private static void Main(string[] args)
+        private static bool printAll = false, commentProtections = false, disableProtections = true, preserveEverything = true, noBase64Decode = true, editArgsFirst = true, removeNops = true, removeAntiDe4dots = true, renameDllImports = true;
+        private static int controlIndex = 0;
+        private static bool[] boolVars = new bool[8];
+        private static void editArgs()
+        {
+            SplashScreen();
+            if (editArgsFirst)
+            {
+                boolVars[0] = removeNops;
+                boolVars[1] = removeAntiDe4dots;
+                boolVars[2] = renameDllImports;
+                boolVars[3] = disableProtections;
+                boolVars[4] = !noBase64Decode;
+                boolVars[5] = commentProtections;
+                boolVars[6] = printAll;
+                boolVars[7] = !preserveEverything;
+                editArgsFirst = false;
+            }            
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(" Options:");
+            Console.ResetColor();
+            Console.WriteLine("  ---------------------------------------|---CLEANING OPTIONS---Original---");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("  |- Remove Nop Instructions:    ");
+            PrintFromBool(boolVars[0], controlIndex, 0);
+            Console.Write("  |- Remove AntiDe4dots:         ");
+            PrintFromBool(boolVars[1], controlIndex, 1);
+            Console.ResetColor();
+            Console.WriteLine("  ---------------------------------------|---CLEANING OPTIONS---Mod--------");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("  |- Rename 'DllImport' Methods: ");
+            PrintFromBool(boolVars[2], controlIndex, 2);
+            Console.Write("  |- Disable Protection Methods: ");
+            PrintFromBool(boolVars[3], controlIndex, 3);
+            Console.Write("  |- Decode Base64 Strings:      ");
+            PrintFromBool(boolVars[4], controlIndex, 4, "(takes a while, not stable)", ConsoleColor.DarkYellow);
+            Console.ResetColor();
+            Console.WriteLine("  ---------------------------------------|---MISC OPTIONS-------Mod--------");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("  |- Comment Protection Methods: ");
+            PrintFromBool(boolVars[5], controlIndex, 5, "(increases file size)", ConsoleColor.DarkYellow);
+            Console.Write("  |- Show All Actions:           ");
+            PrintFromBool(boolVars[6], controlIndex, 6, "(console will be flooded)", ConsoleColor.Yellow);
+            Console.ResetColor();
+            Console.WriteLine("  ---------------------------------------|---SAVING OPTIONS-----Original---");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("  |- Don't Preserve Metadata:    ");
+            PrintFromBool(boolVars[7], controlIndex, 7, "(not recommended to use)", ConsoleColor.DarkRed);
+            Console.WriteLine();
+            Console.Write("     Application Type: ");
+            if (module.IsILOnly) { Console.ForegroundColor = ConsoleColor.DarkCyan; Console.WriteLine("IL-Only"); } else { Console.ForegroundColor = ConsoleColor.DarkYellow; Console.WriteLine("Native"); }
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.Write(" Press Arrow Keys to edit Arguments...");
+            Console.ResetColor();
+            Console.Write(" (anything else = start cleaning)");
+            ConsoleKeyInfo key_ = Console.ReadKey();
+            Console.Clear();
+            switch (key_.Key)
+            {
+                case ConsoleKey.UpArrow:
+                    if (controlIndex != 0) { controlIndex--; }
+                    break;
+                case ConsoleKey.DownArrow:
+                    if (controlIndex != boolVars.Count() - 1) { controlIndex++; }
+                    break;
+                case ConsoleKey.LeftArrow:
+                    boolVars[controlIndex] = !boolVars[controlIndex];
+                    break;
+                case ConsoleKey.RightArrow:
+                    boolVars[controlIndex] = !boolVars[controlIndex];
+                    break;
+                default:
+                    removeNops = boolVars[0];
+                    removeAntiDe4dots = boolVars[1];
+                    renameDllImports = boolVars[2];
+                    disableProtections = boolVars[3];
+                    noBase64Decode = !boolVars[4];
+                    commentProtections = boolVars[5];
+                    printAll = boolVars[6];
+                    preserveEverything = !boolVars[7];
+                    return;
+            }
+            editArgs();
+        }
+
+        private static void PrintFromBool(bool value, int currentPosition, int expectedPosition, string moreInfo = "", ConsoleColor moreInfoColor = ConsoleColor.White)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            if (value)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+            }
+            if (value)
+            {
+                Console.Write(value.ToString() + " ");
+            }
+            else
+            {
+                Console.Write(value.ToString());
+            }
+            Console.ForegroundColor = ConsoleColor.White;
+            if (currentPosition == expectedPosition)
+            {
+                Console.Write(" < | ");
+            }
+            else
+            {
+                Console.Write("   | ");
+            }
+            Console.ForegroundColor = moreInfoColor;
+            Console.WriteLine(moreInfo);
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        private static void SplashScreen()
         {
             Console.Title = "Junk Remover by OFF_LINE";
-            Console.ForegroundColor = ConsoleColor.Red;
-            string text = "";
-            bool preserveEverything = true;
-            string[] shit = File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory + "\\settings.txt");
-            if (!shit[0].Contains("true"))
-                preserveEverything = false;            
             Console.ForegroundColor = ConsoleColor.DarkMagenta;
             string sb = @"       __            __      ____                                     
       / /_  ______  / /__   / __ \___  ____ ___  ____ _   _____  _____
@@ -68,8 +176,15 @@ namespace Anti_De4dot_remover
             Console.WriteLine(" Mod by Misonothx");
             Console.ForegroundColor = ConsoleColor.DarkMagenta;
             Console.WriteLine("  |- (Very basic) AntiTampering, AntiDebugger & AntiDump Protection Remover");
+            Console.WriteLine("  |- DllImport Method Renamer");
+            Console.WriteLine("  |- Base64 String Fixer");
             Console.WriteLine("  |- CUI Improvements & Fixes");
             Console.WriteLine();
+        }
+
+        private static void Main(string[] args)
+        {
+            string text = "";
             if (args.Count() == 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -81,16 +196,6 @@ namespace Anti_De4dot_remover
                 if (File.Exists(args[x]))
                 {
                     text = args[x];
-                    continue;
-                }
-                switch (args[x])
-                {
-                    case "-commentProtectionMethods":
-                        printAll = true;
-                        break;
-                    case "-showAll":
-                        commentProtections = true;
-                        break;
                 }
             }
             if (text == "")
@@ -103,42 +208,56 @@ namespace Anti_De4dot_remover
             {
                 Program.module = ModuleDefMD.Load(text);
                 Program.asm = Assembly.LoadFrom(text);
-                Program.Asmpath = text;
             }
             catch (Exception)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(" Not a .NET Assembly!");
-                Console.ResetColor();
-                Console.WriteLine(" Press any key to exit...");
-                System.Environment.Exit(0);
             }
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(" Filtering useless Nop instructions..");
-            try
+            editArgs();
+            Program.Asmpath = Path.GetFullPath(text);
+            if (removeNops)
             {
-                Execute(module);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(" Filtering useless Nop instructions..");
+                try
+                {
+                    Execute(module);
+                }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(" Failed to filter Nop instructions! (" + ex.Message + ")");
+                    goto end;
+                }
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(" " + removed + " Nop instructions removed!");
+                Console.WriteLine();
             }
-            catch (Exception ex)
+            if (removeAntiDe4dots)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(" Failed to filter Nop instructions! (" + ex.Message + ")");
-                goto end;
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(" Removing fake attributes...");
+                removeshit();
+                removeshit();
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(" " + countofths + " FakeAttributes/AntiDe4dot cases removed!");
+                Console.WriteLine();
             }
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine(" " +removed +  " Nop instructions removed!");
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(" Removing fake attributes...");
-            removeshit();
-            removeshit();
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine(" " + countofths + " FakeAttributes/AntiDe4dot cases removed!");
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(" Checking for possible protections...");
-            Console.WriteLine();
-            tryClearProtections();
+            if (disableProtections)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine(" Checking for possible protections...");
+                Console.WriteLine();
+                tryClearProtections();
+            }
+            if (!noBase64Decode)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                if (!printAll) { Console.WriteLine(); }
+                Console.WriteLine(" Checking for Base64 Strings (might take a bit)...");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(" " + decodeBase64Strings() + " Base64 Strings decoded!");
+                Console.WriteLine();
+            }
             string text3 = string.Format("{0}_noJunk{1}", Path.GetFileNameWithoutExtension(Path.GetFullPath(Asmpath)), Path.GetExtension(Asmpath));
             ModuleWriterOptions moduleWriterOptions = new ModuleWriterOptions(Program.module);
             if (preserveEverything)
@@ -152,22 +271,19 @@ namespace Anti_De4dot_remover
             }
             nativeModuleWriterOptions.Logger = DummyLogger.NoThrowInstance;
             bool isILOnly = Program.module.IsILOnly;
-            if (!printAll)
-            {
-                Console.WriteLine();
-            }
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(" Now saving " + Path.GetFileNameWithoutExtension(args[0]) + "-IL" + Path.GetExtension(args[0]) + " (IL)...");
             try
             {
                 if (isILOnly)
                 {
+                    Console.WriteLine(" Now saving " + Path.GetFileNameWithoutExtension(args[0]) + "-Native" + Path.GetExtension(args[0]) + " (Native)...");
                     Program.module.Write(text3, moduleWriterOptions);
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine(" (IL) '" + Path.GetFileNameWithoutExtension(args[0]) + "-IL" + Path.GetExtension(args[0]) + "' successfully saved!");
                 }
                 else
                 {
+                    Console.WriteLine(" Now saving " + Path.GetFileNameWithoutExtension(args[0]) + "-Native" + Path.GetExtension(args[0]) + " (Native)...");
                     Program.module.NativeWrite(text3, nativeModuleWriterOptions);
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine(" (Native) '" + Path.GetFileNameWithoutExtension(args[0]) + "-Native" + Path.GetExtension(args[0]) + "' successfully saved!");
@@ -180,7 +296,7 @@ namespace Anti_De4dot_remover
             }
             end:
             Console.ResetColor();
-            Console.WriteLine(" Press any key to exit...");
+            Console.Write(" Press any key to exit...");
             Console.ReadKey();
             System.Environment.Exit(0);
         }
@@ -391,6 +507,53 @@ namespace Anti_De4dot_remover
                 }
             }
         }
+        private static int decodeBase64Strings()
+        {
+            int countBase64Strings = 0;
+            foreach (TypeDef t_ in module.Types)
+            {
+                foreach (MethodDef method in t_.Methods)
+                {
+                    List<string> instString = new List<string>();
+                    if (!method.HasBody) { continue; }
+                    for (int x = 0; x < method.Body.Instructions.Count; x++)
+                    {
+                        Instruction inst = method.Body.Instructions[x];
+                        if (inst.OpCode.Equals(OpCodes.Ldstr))
+                        {
+                            if (!(inst.Operand.ToString() == ""))
+                            {
+                                try
+                                {
+                                    string oldOp_ = inst.Operand.ToString();
+                                    byte[] temp_ = null;
+                                    if (IsBase64String(oldOp_))
+                                    {
+                                        inst.Operand = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(inst.Operand.ToString()));
+                                        printRenamed("'" + oldOp_ + "' -> '" + inst.Operand.ToString() + "'", "Base64 String");
+                                        countBase64Strings++;
+                                    }
+                                }
+                                catch (Exception)
+                                {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return countBase64Strings;
+        }
+
+        public static bool IsBase64String(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return false;
+
+            s = s.Trim();
+            return (s.Length % 4 == 0) && Regex.IsMatch(s, @"^[a-zA-Z0-9\+/]*={0,2}$", RegexOptions.None);
+
+        }
 
         private static void tryClearProtections()
         {
@@ -401,17 +564,18 @@ namespace Anti_De4dot_remover
                 {
                     if (method.HasImplMap)
                     {
+                        printRenamed("'" + method.Name + "' -> '" + method.ImplMap.Name + "_" + Path.GetFileNameWithoutExtension(method.ImplMap.Module.Name.ToLower()) + "'", "DllImport method");
+                        method.Name = method.ImplMap.Name + "_" + Path.GetFileNameWithoutExtension(method.ImplMap.Module.Name.ToLower());
                         if (method.ImplMap.Name == "VirtualProtect" && method.ImplMap.Module.Name.ToString().ToLower().Contains("kernel32"))
                         {
                             implMapMethodName = method.Name;
-                            break;
                         }
                     }
                 }
-                if (implMapMethodName != "")
-                {
-                    break;
-                }
+            }
+            if (printAll)
+            {
+                Console.WriteLine();
             }
             foreach (TypeDef t_ in module.Types)
             {
