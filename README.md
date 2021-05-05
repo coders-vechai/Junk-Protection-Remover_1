@@ -28,12 +28,12 @@ This mod will likely trigger any AntiTampering methods that it hasnt detected, p
 
 # Screenshots
 <details>
-  <summary>v1.1.0 </summary>
+  <summary>v1.1.0 & later</summary>
   ![basicView](https://i.imgur.com/mZBJT5Z.png)
 </details>
 
 <details>
-  <summary>"v1.1.0 >"</summary>
+  <summary>before v1.1.0</summary>
   
   ![basicView](https://i.imgur.com/3AVDZy5.png)
 
